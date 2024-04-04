@@ -2,6 +2,7 @@ import tkinter
 import tkinter.messagebox as mb
 from tkinter import *
 from back import skan_codes, coordinates_counting, value_code, take_text
+from timer import TimerApp
 import time
 
 
@@ -42,9 +43,10 @@ class KeyboardView:
         keys = {}
         self.place_key(play_window, keys)
         self.paint_text(text_play, play_window)
-        play_window.bind("<Key>", lambda e: self.coloring_answer(e, text_play, play_window, keys))
+        timer = self.place_timer(play_window)
+        play_window.bind("<Key>", lambda e: self.coloring_answer(e, text_play, play_window, keys, timer))
 
-    def green_button_press(self, keys, code, play_window, text):
+    def green_button_press(self, keys, code, play_window, text, timer):
         while self.red_cliks:
             keys[self.red_cliks.pop()].config(bg="orange")
         keys[skan_codes(code.char)].config(bg="green")
@@ -53,40 +55,43 @@ class KeyboardView:
         time.sleep(0.1)
         keys[skan_codes(code.char)].config(bg="orange")
         if self.pointer == len(text):
-            self.message_box(play_window)
+            self.message_box(play_window, timer)
 
     def rad_button_press(self, keys, code):
         try:
             keys[skan_codes(code)].config(bg="red")
             self.red_cliks.append(skan_codes(code))
         except KeyError:
-            print("okay")
+            ...
 
-    def message_box(self, play_window):
-        answer = mb.askyesno(title="Поздравляем!", message="Хотите сыграть еще раз?")
+    def message_box(self, play_window, timer):
+        timer.stop_timer()
+        time_out = timer.all_time
+        answer = mb.askyesno(title="Поздравляем!", message="Ваше время:"+str(int(time_out))+" .Хотите сыграть еще раз?")
         if answer:
-            self.pointer = 0
-            self.red_cliks = []
-            play_window.destroy()
-            self.window.deiconify()
+            self.go_to_menu(play_window)
         else:
             play_window.destroy()
             self.window.destroy()
 
-    def coloring_answer(self, code, text, play_window, keys):
+    def coloring_answer(self, code, text, play_window, keys, timer):
         for wid in play_window.winfo_children():
             if isinstance(wid, Button):
-                if text[self.pointer] == code.char:
+                if code.keysym == 'Escape':
+                    self.exit_pause(timer, play_window)
+                    return
+                elif text[self.pointer] == code.char:
                     self.edit_text(self.pointer + 1, 1, code.char)
                     self.green_button_press(keys=keys, code=code,
                                             play_window=play_window,
-                                            text=text)
+                                            text=text, timer=timer)
                     return
                 else:
                     self.rad_button_press(keys, code.char)
+                    return
 
     def paint_text(self, text1, play_window):
-        self.text = Text(play_window, height=4, width=60, font='Arial 15')
+        self.text = Text(play_window, height=4, width=60, font='Arial 15', wrap="word")
         self.text.tag_configure("odd", background="green")
         self.text.insert("end", text1)
         self.text.place(x=10, y=200)
@@ -117,6 +122,30 @@ class KeyboardView:
         tag = "odd"
         self.text.replace(str(wid) + '.' + str(length - 1), str(wid) + '.' + str(length), char, tag)
         self.text.configure(state=tkinter.DISABLED)
+
+    @staticmethod
+    def place_timer(play_window):
+        timer = TimerApp(play_window)
+        timer.pack_label(50, 50)
+        timer.start_timer()
+        return timer
+
+    def go_to_menu(self, play_window):
+        self.pointer = 0
+        self.red_cliks = []
+        play_window.destroy()
+        self.window.deiconify()
+
+    def exit_pause(self, timer, play_window):
+        timer.stop_timer()
+        answer = mb.askyesno(title="Пауза",
+                             message="Хотите продолжить?")
+        if answer:
+            timer.start_timer()
+        else:
+            self.go_to_menu(play_window)
+
+
 
 
 a = KeyboardView()

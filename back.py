@@ -52,6 +52,7 @@ def skan_codes(code):
 def value_code(code):
     return list(dict_codes.keys())[list(dict_codes.values()).index(code)]
 
+
 def take_text():
     with open("texts", "rb") as file:
         line = file.read().decode('utf-8')
