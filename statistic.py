@@ -1,5 +1,7 @@
 from database import DataBase
 from datetime import date
+
+
 class Stat:
     def __init__(self):
         self.count_of_symbol = 0
@@ -32,3 +34,18 @@ class Stat:
         count = self.data_base.count_number_of_records(name)
         self.data_base.close_database()
         return count
+
+    def latest_name(self):
+        self.data_base = DataBase()
+        name = self.data_base.return_latest_name()[1]
+        print(name)
+        self.data_base.delete_latest_name(name)
+        self.data_base.close_database()
+
+        return name
+
+    def user_statistic_array(self, name):
+        self.data_base = DataBase()
+        array_statistic = self.data_base.personal_statistic(name)
+        self.data_base.close_database()
+        return array_statistic

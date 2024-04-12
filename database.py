@@ -33,3 +33,16 @@ class DataBase:
     def count_number_of_records(self, username):
         self.cursor.execute(f'SELECT COUNT(*) FROM Users WHERE username = (?)', username)
         return self.cursor.fetchall()[0]
+
+    def return_latest_name(self):
+        self.cursor.execute(f'SELECT * FROM Users ORDER BY data ASC LIMIT 1')
+        return self.cursor.fetchall()[0]
+
+    def delete_latest_name(self, name):
+        print(name)
+        self.cursor.execute('DELETE FROM Users WHERE username = (?)', (name,))
+        self.connection.commit()
+
+    def personal_statistic(self, name):
+        self.cursor.execute(f'SELECT * FROM Users WHERE username = (?)', (name,))
+        return self.cursor.fetchall()

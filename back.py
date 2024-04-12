@@ -59,3 +59,12 @@ def take_text():
         list_texts = line.split("~")
         list_texts = list_texts[::2]
         return random.choice(list_texts)
+
+
+def place_statistic_name(num):
+    if num <= 6:
+        return num, 0
+    elif num <= 12:
+        return (num % 7), 3
+    else:
+        return None, None

@@ -1,7 +1,7 @@
 import tkinter
 import tkinter.messagebox as mb
 from tkinter import *
-from back import skan_codes, coordinates_counting, value_code, take_text
+from back import skan_codes, coordinates_counting, value_code, take_text, place_statistic_name
 from timer import TimerApp
 from statistic import Stat
 import time
@@ -9,6 +9,7 @@ import time
 
 class KeyboardView:
     def __init__(self):
+        """Инициация стартового окна"""
         self.window = Tk()
         self.pointer = 0
         self.red_cliks = []
@@ -19,85 +20,84 @@ class KeyboardView:
         self.stat_game = None
 
     def start_window(self):
+        """Отображение стартового окна и кнопок"""
         self.window.title("Привет!")
         name_window = Label(self.window, text="Клавиатурный тренажер", fg="white", font=("Arial Bold", 50), bg="blue")
         name_window.pack(anchor=N)
         self.window.geometry("900x700")
         self.window.configure(background="blue")
-        self.start_button()
+        self.start_buttons()
         self.window.mainloop()
 
-    def start_button(self):
-        button_start = Button(self.window,
-                              text="Давай играть",
-                              width=30, height=5,
-                              bg='white', fg="black"
-                              )
+    @staticmethod
+    def return_standard_button(text, window):
+        """Cоздание базовой кнопки"""
+        button = Button(window,
+                        text=text,
+                        width=30, height=5,
+                        bg='white', fg="black"
+                        )
+        return button
+
+    def start_buttons(self):
+        """Помещение стартовых кнопок на экран"""
+        button_start = self.return_standard_button("Игра", self.window)
         button_start.bind("<Button-1>", self.window_asc_name)
         button_start.pack(anchor=S)
-        button_statistic = Button(self.window,
-                                  text="Cтатистика",
-                                  width=30, height=5,
-                                  bg='white', fg="black"
-                                  )
+        button_statistic = self.return_standard_button("Статистика", self.window)
         button_statistic.bind("<Button-1>", self.window_statistic)
         button_statistic.pack(anchor=S)
 
-    def window_asc_name(self, event):
-        self.window.withdraw()
+    def standard_window(self, text):
+        """Создание базового окна"""
         play_window = Toplevel()
         play_window.protocol("WM_DELETE_WINDOW", lambda: self.window.destroy())
+        play_window.title(text)
+        play_window.geometry("900x700")
+        return play_window
+
+    def window_asc_name(self, event):
+        """Окно на котором запоминается имя пользователя"""
+        self.window.withdraw()
+        play_window = self.standard_window("Введите имя")
         label = Label(play_window, text="Введите имя")
         label.pack(anchor=S)
-        play_window.title("Введите свое имя")
         button = self.continue_button(play_window)
         self.remind_name(play_window, button)
-        play_window.geometry("900x700")
 
     def remind_name(self, play_window, button):
+        """Поле ввода имени"""
         name = Text(play_window, height=1, width=60, font='Arial 15', wrap="word")
         name.pack(anchor=S)
         self.save_button(play_window, name, button)
         play_window.update()
 
+    def save_button(self, play_window, name, button):
+        """Кнопка сохранения имени"""
+        button_save = self.return_standard_button("Сохранить имя", play_window)
+        button_save.bind("<Button-1>", lambda e: self.save_name(name, button, play_window, e))
+        button_save.pack(anchor=S)
+
     def save_name(self, name, button, play_window, event):
+        """Сохранение имени"""
         expected_name = name.get("1.0", "end")
         if expected_name != '\n':
             self.name = expected_name[:len(expected_name) - 1]
             button.config(state=NORMAL)
             button.bind("<Button-1>", lambda e: self.keyboard_start_game(play_window, e))
-        print(self.name)
 
     def continue_button(self, play_window):
-        button_continue = Button(play_window,
-                                 text="Продолжить",
-                                 width=30, height=5,
-                                 bg='white', fg="black",
-                                 )
+        """Кнопка перехода к игре"""
+        button_continue = self.return_standard_button("Продолжить", play_window)
         button_continue.config(state=DISABLED)
-
         button_continue.pack(anchor=S)
         return button_continue
 
-    def save_button(self, play_window, name, button):
-        button_save = Button(play_window,
-                             text="Сохранить имя",
-                             width=30, height=5,
-                             bg='white', fg="black"
-                             )
-        button_save.bind("<Button-1>", lambda e: self.save_name(name, button, play_window, e))
-        button_save.pack(anchor=S)
-
     def keyboard_start_game(self, window_ex, event):
+        """Окно игры"""
         window_ex.destroy()
-        play_window = Toplevel()
-        play_window.protocol("WM_DELETE_WINDOW", lambda: self.window.destroy())
-
-        play_window.title("Игра")
-        play_window.geometry("900x700")
-
+        play_window = self.standard_window("Игра")
         text_play = take_text()
-
         self.place_key(play_window)
         self.paint_text(text_play, play_window)
         self.timer = self.place_timer(play_window)
@@ -107,12 +107,12 @@ class KeyboardView:
 
     def green_button_press(self, code, play_window, text):
         while self.red_cliks:
-            self.keys[self.red_cliks.pop()].config(bg="orange")
+            self.keys[self.red_cliks.pop()].config(bg="aqua")
         self.keys[skan_codes(code.char)].config(bg="green")
         play_window.update()
         self.pointer += 1
         time.sleep(0.1)
-        self.keys[skan_codes(code.char)].config(bg="orange")
+        self.keys[skan_codes(code.char)].config(bg="aqua")
         if self.pointer == len(text):
             self.message_box(play_window)
 
@@ -166,7 +166,7 @@ class KeyboardView:
     def place_key(self, play_window):
         for i in range(2, 54):
             if (i != 14) and (i != 15) and (i != 28) and (i != 29) and (i != 42):
-                btn = Button(play_window, bd=5, font=("", 15), bg="orange",
+                btn = Button(play_window, bd=5, font=("", 15), bg="aqua",
                              text=value_code(i))
                 coordinate_x, coordinate_y = coordinates_counting(i)
                 btn.place(x=coordinate_x, y=coordinate_y, width=50, height=50)
@@ -189,7 +189,7 @@ class KeyboardView:
         return timer
 
     def key_space(self, play_window):
-        btn = Button(play_window, bd=5, font=("", 15), bg="orange",
+        btn = Button(play_window, bd=5, font=("", 15), bg="aqua",
                      text=value_code(57))
         coordinate_x, coordinate_y = coordinates_counting(57)
         btn.place(x=coordinate_x, y=coordinate_y, width=80, height=50)
@@ -224,26 +224,85 @@ class KeyboardView:
 
     def window_statistic(self, event):
         self.window.withdraw()
-        stat_window = Toplevel()
-        stat_window.protocol("WM_DELETE_WINDOW", lambda: self.window.destroy())
-        stat_window.geometry("900x700")
+        stat_window = self.standard_window("Статистика")
         self.stat_game = Stat()
         array_of_usernames = self.stat_game.output_usernames()
-        i = 0
+        row = 0
+        button_back = self.button_back(self.window, stat_window)
         while array_of_usernames:
             name = array_of_usernames.pop()
             count = self.stat_game.output_count_records(name)
-            button = Button(stat_window,
-                            text=name,
-                            width=30, height=5,
-                            bg='white', fg="black",
-                            )
-            print(count)
-            label = Label(stat_window, text=count, width=30, height=5,
-                            bg='pink', fg="black")
-            label.grid(row=i, column=1)
-            button.grid(row=i, column=0)
-            i+=1
+            button = self.button_statistic(stat_window, name)
+            count_of_games = str(count[0])
+            text = count_of_games + " игр"
+            label = self.label_statistic(stat_window, text, 'pink')
+            x, y = place_statistic_name(row)
+            if x is None:
+                self.stat_game.latest_name()
+                row = 0
+                x, y = place_statistic_name(row)
+            label.grid(row=x, column=y + 1)
+            button.grid(row=x, column=y)
+            row += 1
+        button_back.grid(row=6, column=3)
+
+    def button_statistic(self, stat_window, name):
+        button = Button(stat_window,
+                        text=name[0] + " сыграл",
+                        width=30, height=5,
+                        bg='white', fg="black",
+                        )
+        button.bind("<Button-1>", lambda e: self.person_statistic(name, stat_window, e))
+        return button
+
+    def person_statistic(self, name, old_window, e):
+        old_window.withdraw()
+        stat_window = self.standard_window(str(name[0]))
+        self.stat_game = Stat()
+        button_back = self.button_back(old_window, stat_window)
+        user_stat = self.stat_game.user_statistic_array(name[0])
+        arr_of_headers = ['Номер', 'Дата', 'Счет', 'Скорость', 'Ошибки']
+        self.place_headers_table(stat_window, arr_of_headers, 0)
+        row = 1
+        while user_stat:
+            name = user_stat.pop()
+            arr_of_stat = [str(row), name[2], name[5], name[3], name[4]]
+            self.place_headers_table(stat_window, arr_of_stat, row)
+            row += 1
+        button_back.grid(row=6, column=3)
+
+    def place_headers_table(self, window, arr_of_headers, row):
+        label_number = self.label_statistic(window, arr_of_headers[0], 'aqua')
+        label_data = self.label_statistic(window, arr_of_headers[1], 'pink')
+        label_score = self.label_statistic(window, arr_of_headers[2], 'pink')
+        label_speed = self.label_statistic(window, arr_of_headers[3], 'pink')
+        label_mistakes = self.label_statistic(window, arr_of_headers[4], 'pink')
+
+        label_number.grid(row=row, column=0)
+        label_data.grid(row=row, column=1)
+        label_score.grid(row=row, column=2)
+        label_speed.grid(row=row, column=3)
+        label_mistakes.grid(row=row, column=4)
+
+    @staticmethod
+    def label_statistic(stat_window, text, color):
+        label = Label(stat_window, text=text, width=22, height=5,
+                      bg=color, fg="black")
+        return label
+
+    def button_back(self, window_new, window_old):
+        button = Button(window_old,
+                        text="Назад",
+                        width=30, height=5,
+                        bg='aqua', fg="black",
+                        )
+
+        def back_window(e, new_window, previous_window):
+            new_window.deiconify()
+            previous_window.destroy()
+
+        button.bind("<Button-1>", lambda e: back_window(e, window_new, window_old))
+        return button
 
 
 a = KeyboardView()
