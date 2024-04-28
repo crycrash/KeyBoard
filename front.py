@@ -1,7 +1,12 @@
 import tkinter
 import tkinter.messagebox as mb
 from tkinter import *
-from back import skan_codes, coordinates_counting, value_code, take_text, place_statistic_name
+from keyboard._keyboard_event import KEY_DOWN, KEY_UP
+
+import keyboard
+
+from back import (skan_codes, coordinates_counting, value_code,
+                  take_text, place_statistic_name, size_button, return_shift_key, return_shift_name)
 from timer import TimerApp
 from statistic import Stat
 import time
@@ -10,6 +15,7 @@ import time
 class KeyboardView:
     def __init__(self):
         """Инициация стартового окна"""
+        self.offset = 1
         self.window = Tk()
         self.pointer = 0
         self.red_cliks = []
@@ -18,6 +24,8 @@ class KeyboardView:
         self.keys = {}
         self.name = ''
         self.stat_game = None
+        self.offset_height = 1
+        self.flag_shift = 0
 
     def start_window(self):
         """Отображение стартового окна и кнопок"""
@@ -53,7 +61,7 @@ class KeyboardView:
         play_window = Toplevel()
         play_window.protocol("WM_DELETE_WINDOW", lambda: self.window.destroy())
         play_window.title(text)
-        play_window.geometry("900x700")
+        play_window.geometry("1000x900")
         return play_window
 
     def window_asc_name(self, event):
@@ -105,25 +113,43 @@ class KeyboardView:
         self.stat_game = Stat()
         play_window.bind("<Key>", lambda e: self.coloring_answer(e, text_play, play_window))
 
+    def check_flag_shift(self, code, color):
+        self.keys[skan_codes(code)].config(bg=color)
+
     def green_button_press(self, code, play_window, text):
+        """Верная клавиша"""
         while self.red_cliks:
-            self.keys[self.red_cliks.pop()].config(bg="aqua")
-        self.keys[skan_codes(code.char)].config(bg="green")
+            key_code = self.red_cliks.pop()
+            try:
+                self.check_flag_shift(key_code, 'black')
+                print(key_code)
+            except KeyError:
+                self.keys[skan_codes(key_code.keysym)].config(bg="black")
+        self.check_flag_shift(code, 'green')
         play_window.update()
         self.pointer += 1
-        time.sleep(0.1)
-        self.keys[skan_codes(code.char)].config(bg="aqua")
+        time_delay = 0.1
+        time.sleep(time_delay)
+        self.check_flag_shift(code, 'black')
         if self.pointer == len(text):
             self.message_box(play_window)
 
     def rad_button_press(self, code):
+        """Неверная клавиша"""
         try:
-            self.keys[skan_codes(code)].config(bg="red")
-            self.red_cliks.append(skan_codes(code))
+            try:
+                self.check_flag_shift(code, 'red')
+            except KeyError:
+                self.keys[skan_codes(code.keysym)].config(bg="red")
+            finally:
+
+                self.red_cliks.append(code)
+
         except KeyError:
             ...
 
     def message_box(self, play_window):
+        """Окно после окончания игры"""
         self.timer.stop_timer()
         time_out = self.timer.all_time
         result = self.stat_game.count_stat(int(time_out))
@@ -137,25 +163,45 @@ class KeyboardView:
             play_window.destroy()
             self.window.destroy()
 
+    def shift_processing(self, event):
+        if event.event_type == KEY_DOWN:
+            self.on_press(event.name)
+
+        elif event.event_type == KEY_UP:
+            self.on_release(event.name)
+
     def coloring_answer(self, code, text, play_window):
+        """Раскраска текста"""
         for wid in play_window.winfo_children():
             if isinstance(wid, Button):
-                if code.keysym == 'Escape':
+                keyboard.hook(lambda e: self.shift_processing(e))
+                if code.keysym == 'Shift_L' or code.keysym == 'Shift_R':
+                    ...
+                elif code.keysym == 'Escape':
                     self.exit_pause(play_window)
                     return
                 elif text[self.pointer] == code.char:
-                    self.edit_text(self.pointer + 1, 1, code.char)
-                    self.green_button_press(code=code,
+                    if text[self.pointer] == '\r' or text[self.pointer] == '\n':
+                        self.pointer += 1
+                        self.offset_height += 1
+                        self.offset = (-1 * self.pointer)
+                    self.edit_text(self.pointer + self.offset, self.offset_height, code.char)
+                    a = str(text[self.pointer])
+                    a = a.lower()
+                    self.green_button_press(code=a,
                                             play_window=play_window,
                                             text=text)
                     self.stat_game.count_of_symbol += 1
                     return
                 else:
-                    self.rad_button_press(code.char)
+                    a = str(code.char)
+                    a = a.lower()
+                    self.rad_button_press(a)
                     self.stat_game.mistakes += 1
                     return
 
     def paint_text(self, text1, play_window):
+        """Заливка текста зеленым"""
         self.text = Text(play_window, height=4, width=60, font='Arial 15', wrap="word")
         self.text.tag_configure("odd", background="green")
         self.text.insert("end", text1)
@@ -163,45 +209,68 @@ class KeyboardView:
         self.text.configure(state=tkinter.DISABLED)
         play_window.update()
 
+    def on_release(self, key):
+        if key == 'shift' and self.flag_shift % 2 == 1:
+            self.flag_shift = 0
+            missed_keys = [14, 15, 28, 29, 42]
+            for i in range(2, 54):
+                if i not in missed_keys:
+                    self.keys[i].config(text=value_code(i))
+            print(2)
+
+
+    def on_press(self, key):
+        if key == 'shift' and self.flag_shift % 2 == 0:
+            self.flag_shift = 1
+            missed_keys = [14, 15, 28, 29, 42]
+            for i in range(2, 54):
+                if i not in missed_keys:
+                    self.keys[i].config(text=return_shift_key(i))
+            print(3)
+
+
     def place_key(self, play_window):
-        for i in range(2, 54):
-            if (i != 14) and (i != 15) and (i != 28) and (i != 29) and (i != 42):
-                btn = Button(play_window, bd=5, font=("", 15), bg="aqua",
+        """Размещение клавиш"""
+        start_key = 2
+        end_key = 74
+        missing_keys = [14, 15, 28, 29, 42, 54, 55, 56]
+        for i in range(start_key, end_key):
+            if i not in missing_keys:
+                btn = Button(play_window, bd=1, font=("", 15), bg="black", fg='white',
                              text=value_code(i))
                 coordinate_x, coordinate_y = coordinates_counting(i)
-                btn.place(x=coordinate_x, y=coordinate_y, width=50, height=50)
+                width, height = size_button(i)
+                btn.place(x=coordinate_x, y=coordinate_y, width=width, height=height)
                 self.keys[i] = btn
             else:
                 continue
-        self.key_space(play_window)
 
     def edit_text(self, length, wid, char):
+        """Вставка зеленого цвета"""
         self.text.configure(state=tkinter.NORMAL)
         tag = "odd"
+        if char == '\r':
+            char = ''
         self.text.replace(str(wid) + '.' + str(length - 1), str(wid) + '.' + str(length), char, tag)
         self.text.configure(state=tkinter.DISABLED)
 
     @staticmethod
     def place_timer(play_window):
+        """Размещение таймера"""
         timer = TimerApp(play_window)
         timer.pack_label(50, 50)
         timer.start_timer()
         return timer
 
-    def key_space(self, play_window):
-        btn = Button(play_window, bd=5, font=("", 15), bg="aqua",
-                     text=value_code(57))
-        coordinate_x, coordinate_y = coordinates_counting(57)
-        btn.place(x=coordinate_x, y=coordinate_y, width=80, height=50)
-        self.keys[57] = btn
-
     def go_to_menu(self, play_window):
+        """Выход в меню"""
         self.pointer = 0
         self.red_cliks = []
         play_window.destroy()
         self.window.deiconify()
 
     def exit_pause(self, play_window):
+        """Пауза"""
         start_time = time.time()
         self.timer.stop_timer()
         answer = mb.askyesno(title="Пауза",
@@ -214,6 +283,7 @@ class KeyboardView:
             self.go_to_menu(play_window)
 
     def place_pause(self, play_window):
+        """Размещение кнопки паузы"""
         button_pause = Button(play_window,
                               text="⏸️",
                               width=15, height=5,
@@ -223,6 +293,7 @@ class KeyboardView:
         button_pause.place(x=600, y=50)
 
     def window_statistic(self, event):
+        """Окно со статистикой"""
         self.window.withdraw()
         stat_window = self.standard_window("Статистика")
         self.stat_game = Stat()
@@ -230,10 +301,11 @@ class KeyboardView:
         row = 0
         button_back = self.button_back(self.window, stat_window)
         while array_of_usernames:
+
             name = array_of_usernames.pop()
             count = self.stat_game.output_count_records(name)
             button = self.button_statistic(stat_window, name)
-            count_of_games = str(count[0])
+            count_of_games = str(count)
             text = count_of_games + " игр"
             label = self.label_statistic(stat_window, text, 'pink')
             x, y = place_statistic_name(row)
@@ -247,8 +319,9 @@ class KeyboardView:
         button_back.grid(row=6, column=3)
 
     def button_statistic(self, stat_window, name):
+        """Кнопка статистики"""
         button = Button(stat_window,
-                        text=name[0] + " сыграл",
+                        text=name + " сыграл",
                         width=30, height=5,
                         bg='white', fg="black",
                         )
@@ -256,22 +329,24 @@ class KeyboardView:
         return button
 
     def person_statistic(self, name, old_window, e):
+        """Статистика пользователя"""
         old_window.withdraw()
         stat_window = self.standard_window(str(name[0]))
         self.stat_game = Stat()
         button_back = self.button_back(old_window, stat_window)
-        user_stat = self.stat_game.user_statistic_array(name[0])
+        user_stat = self.stat_game.user_statistic_array(name)
         arr_of_headers = ['Номер', 'Дата', 'Счет', 'Скорость', 'Ошибки']
         self.place_headers_table(stat_window, arr_of_headers, 0)
         row = 1
         while user_stat:
             name = user_stat.pop()
-            arr_of_stat = [str(row), name[2], name[5], name[3], name[4]]
+            arr_of_stat = [str(row), name['data'], name['score'], name['speed'], name['mistakes']]
             self.place_headers_table(stat_window, arr_of_stat, row)
             row += 1
         button_back.grid(row=6, column=3)
 
     def place_headers_table(self, window, arr_of_headers, row):
+        """Размещение заголовка статистики"""
         label_number = self.label_statistic(window, arr_of_headers[0], 'aqua')
         label_data = self.label_statistic(window, arr_of_headers[1], 'pink')
         label_score = self.label_statistic(window, arr_of_headers[2], 'pink')
@@ -286,11 +361,14 @@ class KeyboardView:
 
     @staticmethod
     def label_statistic(stat_window, text, color):
+        """Ячейка статистики"""
         label = Label(stat_window, text=text, width=22, height=5,
                       bg=color, fg="black")
         return label
 
-    def button_back(self, window_new, window_old):
+    @staticmethod
+    def button_back(window_new, window_old):
+        """Кнопка перехода к прошлому окну"""
         button = Button(window_old,
                         text="Назад",
                         width=30, height=5,
@@ -298,6 +376,7 @@ class KeyboardView:
                         )
 
         def back_window(e, new_window, previous_window):
+            """Закрытие старого окна"""
             new_window.deiconify()
             previous_window.destroy()
 

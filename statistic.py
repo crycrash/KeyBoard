@@ -4,6 +4,7 @@ from datetime import date
 
 class Stat:
     def __init__(self):
+        """Инициализация статистики"""
         self.count_of_symbol = 0
         self.speed = 0
         self.mistakes = 0
@@ -11,40 +12,47 @@ class Stat:
         self.data_base = None
 
     def count_speed(self, time):
+        """Подсчет скорости"""
         self.speed = (self.count_of_symbol // time) * 60
 
     def count_stat(self, time):
+        """Высчитывание статистики"""
         self.count_speed(time)
         self.score = (self.speed*10) - (self.mistakes*50)
         return self.score
 
     def enter_statistics(self, name):
+        """Выбор статистики"""
         self.data_base = DataBase()
         self.data_base.insert_statistic(name, str(date.today()), self.speed, self.mistakes, self.score)
         self.data_base.close_database()
 
     def output_usernames(self):
+        """Вывод имен"""
         self.data_base = DataBase()
         arr = self.data_base.choosing_usernames()
+
         self.data_base.close_database()
         return arr
 
     def output_count_records(self, name):
+        """Вывод записи"""
         self.data_base = DataBase()
         count = self.data_base.count_number_of_records(name)
         self.data_base.close_database()
         return count
 
     def latest_name(self):
+        """Последнее имя"""
         self.data_base = DataBase()
-        name = self.data_base.return_latest_name()[1]
-        print(name)
+        name = self.data_base.return_latest_name()['username']
         self.data_base.delete_latest_name(name)
         self.data_base.close_database()
 
         return name
 
     def user_statistic_array(self, name):
+        """Статистика пользователя"""
         self.data_base = DataBase()
         array_statistic = self.data_base.personal_statistic(name)
         self.data_base.close_database()
