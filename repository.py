@@ -3,10 +3,10 @@ from datetime import datetime
 
 
 class Repository:
-    def __init__(self):
+    def __init__(self, path):
         """Инициация репозитория"""
         self.data = None
-        self.file_path = 'database.json'
+        self.file_path = path
         self.load_data()
 
     def load_data(self):

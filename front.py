@@ -110,7 +110,7 @@ class KeyboardView:
         self.paint_text(text_play, play_window)
         self.timer = self.place_timer(play_window)
         self.place_pause(play_window)
-        self.stat_game = Stat()
+        self.stat_game = Stat("database.json")
         play_window.bind("<Key>", lambda e: self.coloring_answer(e, text_play, play_window))
 
     def check_flag_shift(self, code, color):
@@ -299,7 +299,7 @@ class KeyboardView:
         """Окно со статистикой"""
         self.window.withdraw()
         stat_window = self.standard_window("Статистика")
-        self.stat_game = Stat()
+        self.stat_game = Stat("database.json")
         array_of_usernames = self.stat_game.output_usernames()
         row = 0
         button_back = self.button_back(self.window, stat_window)
@@ -334,7 +334,7 @@ class KeyboardView:
         """Статистика пользователя"""
         old_window.withdraw()
         stat_window = self.standard_window(str(name[0]))
-        self.stat_game = Stat()
+        self.stat_game = Stat("database.json")
         button_back = self.button_back(old_window, stat_window)
         user_stat = self.stat_game.user_statistic_array(name)
         arr_of_headers = ['Номер', 'Дата', 'Счет', 'Скорость', 'Ошибки']
