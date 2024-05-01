@@ -6,7 +6,7 @@ from keyboard._keyboard_event import KEY_DOWN, KEY_UP
 import keyboard
 
 from back import (skan_codes, coordinates_counting, value_code,
-                  take_text, place_statistic_name, size_button, return_shift_key, return_shift_name)
+                  take_text, place_statistic_name, size_button, return_shift_key)
 from timer import TimerApp
 from statistic import Stat
 import time
@@ -114,6 +114,7 @@ class KeyboardView:
         play_window.bind("<Key>", lambda e: self.coloring_answer(e, text_play, play_window))
 
     def check_flag_shift(self, code, color):
+        """Проверка нажатия на Shift"""
         self.keys[skan_codes(code)].config(bg=color)
 
     def green_button_press(self, code, play_window, text):
@@ -138,13 +139,13 @@ class KeyboardView:
         """Неверная клавиша"""
         try:
             try:
-                self.check_flag_shift(code, 'red')
+                str_code = str(code.char)
+                str_code = str_code.lower()
+                self.check_flag_shift(str_code, 'red')
+                self.red_cliks.append(code.char)
             except KeyError:
                 self.keys[skan_codes(code.keysym)].config(bg="red")
-            finally:
-
-                self.red_cliks.append(code)
-
+                self.red_cliks.append(code.keysym)
         except KeyError:
             ...
 
@@ -164,11 +165,19 @@ class KeyboardView:
             self.window.destroy()
 
     def shift_processing(self, event):
+        """Обработка нажатия на Shift"""
         if event.event_type == KEY_DOWN:
             self.on_press(event.name)
 
         elif event.event_type == KEY_UP:
             self.on_release(event.name)
+
+    def return_processing(self, symbol):
+        """Обработка переноса строки"""
+        if symbol == '\r' or symbol == '\n':
+            self.pointer += 1
+            self.offset_height += 1
+            self.offset = (-1 * self.pointer)
 
     def coloring_answer(self, code, text, play_window):
         """Раскраска текста"""
@@ -181,22 +190,18 @@ class KeyboardView:
                     self.exit_pause(play_window)
                     return
                 elif text[self.pointer] == code.char:
-                    if text[self.pointer] == '\r' or text[self.pointer] == '\n':
-                        self.pointer += 1
-                        self.offset_height += 1
-                        self.offset = (-1 * self.pointer)
+                    self.return_processing(text[self.pointer])
                     self.edit_text(self.pointer + self.offset, self.offset_height, code.char)
-                    a = str(text[self.pointer])
-                    a = a.lower()
-                    self.green_button_press(code=a,
+                    str_code = str(text[self.pointer])
+                    str_code = str_code.lower()
+                    self.green_button_press(code=str_code,
                                             play_window=play_window,
                                             text=text)
                     self.stat_game.count_of_symbol += 1
                     return
                 else:
-                    a = str(code.char)
-                    a = a.lower()
-                    self.rad_button_press(a)
+                    str_code = code
+                    self.rad_button_press(str_code)
                     self.stat_game.mistakes += 1
                     return
 
@@ -210,24 +215,22 @@ class KeyboardView:
         play_window.update()
 
     def on_release(self, key):
+        """Обработка снятия зажатия с Shift"""
         if key == 'shift' and self.flag_shift % 2 == 1:
             self.flag_shift = 0
             missed_keys = [14, 15, 28, 29, 42]
             for i in range(2, 54):
                 if i not in missed_keys:
                     self.keys[i].config(text=value_code(i))
-            print(2)
-
 
     def on_press(self, key):
+        """Обработка зажатия Shift"""
         if key == 'shift' and self.flag_shift % 2 == 0:
             self.flag_shift = 1
             missed_keys = [14, 15, 28, 29, 42]
             for i in range(2, 54):
                 if i not in missed_keys:
                     self.keys[i].config(text=return_shift_key(i))
-            print(3)
-
 
     def place_key(self, play_window):
         """Размещение клавиш"""
@@ -301,7 +304,6 @@ class KeyboardView:
         row = 0
         button_back = self.button_back(self.window, stat_window)
         while array_of_usernames:
-
             name = array_of_usernames.pop()
             count = self.stat_game.output_count_records(name)
             button = self.button_statistic(stat_window, name)

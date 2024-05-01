@@ -1,4 +1,4 @@
-from database import DataBase
+from repository import Repository
 from datetime import date
 
 
@@ -9,7 +9,7 @@ class Stat:
         self.speed = 0
         self.mistakes = 0
         self.score = 0
-        self.data_base = None
+        self.repository = None
 
     def count_speed(self, time):
         """Подсчет скорости"""
@@ -23,37 +23,30 @@ class Stat:
 
     def enter_statistics(self, name):
         """Выбор статистики"""
-        self.data_base = DataBase()
-        self.data_base.insert_statistic(name, str(date.today()), self.speed, self.mistakes, self.score)
-        self.data_base.close_database()
+        self.repository = Repository()
+        self.repository.insert_statistic(name, str(date.today()), self.speed, self.mistakes, self.score)
 
     def output_usernames(self):
         """Вывод имен"""
-        self.data_base = DataBase()
-        arr = self.data_base.choosing_usernames()
-
-        self.data_base.close_database()
+        self.repository = Repository()
+        arr = self.repository.choosing_usernames()
         return arr
 
     def output_count_records(self, name):
         """Вывод записи"""
-        self.data_base = DataBase()
-        count = self.data_base.count_number_of_records(name)
-        self.data_base.close_database()
+        self.repository = Repository()
+        count = self.repository.count_number_of_records(name)
         return count
 
     def latest_name(self):
         """Последнее имя"""
-        self.data_base = DataBase()
-        name = self.data_base.return_latest_name()['username']
-        self.data_base.delete_latest_name(name)
-        self.data_base.close_database()
-
+        self.repository = Repository()
+        name = self.repository.return_latest_name()['username']
+        self.repository.delete_latest_name(name)
         return name
 
     def user_statistic_array(self, name):
         """Статистика пользователя"""
-        self.data_base = DataBase()
-        array_statistic = self.data_base.personal_statistic(name)
-        self.data_base.close_database()
+        self.repository = Repository()
+        array_statistic = self.repository.personal_statistic(name)
         return array_statistic
